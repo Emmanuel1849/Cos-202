@@ -1,0 +1,231 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+class PocketCGPACalculator:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("PPC - Pocket CGPA")
+        self.root.geometry("380x600")
+        self.root.configure(bg="#0F172A")  # Modern slate dark theme
+        self.root.resizable(False, False)
+        
+        # Data tracking arrays
+        self.courses = []
+        
+        self.setup_styles()
+        self.create_header()
+        self.create_input_form()
+        self.create_course_list()
+        self.create_summary_panel()
+
+    def setup_styles(self):
+        """Configures visual themes for layout elements."""
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
+        
+        # Style treeview table
+        self.style.configure("Treeview", 
+            background="#1E293B", 
+            foreground="#F8FAFC", 
+            fieldbackground="#1E293B",
+            rowheight=28,
+            font=("Helvetica", 10)
+        )
+        self.style.configure("Treeview.Heading", 
+            background="#334155", 
+            foreground="#F8FAFC", 
+            font=("Helvetica", 10, "bold")
+        )
+
+    def create_header(self):
+        """Creates the pocket app branding title bar."""
+        header = tk.Label(
+            self.root, 
+            text="📱 PERSONAL POCKET CGPA (PPC)", 
+            font=("Helvetica", 14, "bold"), 
+            bg="#3B82F6", 
+            fg="#FFFFFF", 
+            pady=12
+        )
+        header.pack(fill="x")
+
+    def create_input_form(self):
+        """Builds input fields for Course Code, Score, and Credit Units."""
+        form_frame = tk.LabelFrame(
+            self.root, text=" Add Course Details ", 
+            font=("Helvetica", 10, "bold"), bg="#0F172A", fg="#94A3B8", padx=10, pady=10
+        )
+        form_frame.pack(fill="x", padx=15, pady=10)
+        
+        # Row 1: Course Code
+        tk.Label(form_frame, text="Course Code:", bg="#0F172A", fg="#F8FAFC").grid(row=0, column=0, sticky="w", pady=5)
+        self.code_entry = tk.Entry(form_frame, font=("Helvetica", 11), bg="#1E293B", fg="#FFFFFF", insertbackground="white", bd=1)
+        self.code_entry.grid(row=0, column=1, fill="x", padx=5, pady=5)
+        
+        # Row 2: Score (0 - 100)
+        tk.Label(form_frame, text="Score (0-100):", bg="#0F172A", fg="#F8FAFC").grid(row=1, column=0, sticky="w", pady=5)
+        self.score_entry = tk.Entry(form_frame, font=("Helvetica", 11), bg="#1E293B", fg="#FFFFFF", insertbackground="white", bd=1)
+        self.score_entry.grid(row=1, column=1, fill="x", padx=5, pady=5)
+        
+        # Row 3: Credit Units
+        tk.Label(form_frame, text="Credit Units:", bg="#0F172A", fg="#F8FAFC").grid(row=2, column=0, sticky="w", pady=5)
+        self.unit_entry = tk.Entry(form_frame, font=("Helvetica", 11), bg="#1E293B", fg="#FFFFFF", insertbackground="white", bd=1)
+        self.unit_entry.grid(row=2, column=1, fill="x", padx=5, pady=5)
+        
+        # Add Button
+        add_btn = tk.Button(
+            form_frame, text="Add Course", font=("Helvetica", 10, "bold"),
+            bg="#10B981", fg="#FFFFFF", activebackground="#059669", activeforeground="#FFFFFF",
+            bd=0, cursor="hand2", command=self.add_course
+        )
+        add_btn.grid(row=3, column=0, columnspan=2, sticky="ew", pady=10)
+
+    def create_course_list(self):
+        """Displays data in a tidy table format."""
+        list_frame = tk.Frame(self.root, bg="#0F172A")
+        list_frame.pack(fill="both", expand=True, padx=15)
+        
+        columns = ("code", "score", "grade", "units", "gp")
+        self.tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=6)
+        
+        self.tree.heading("code", text="Course")
+        self.tree.heading("score", text="Score")
+        self.tree.heading("grade", text="Grade")
+        self.tree.heading("units", text="Units")
+        self.tree.heading("gp", text="GP")
+        
+        self.tree.column("code", width=80, anchor="center")
+        self.tree.column("score", width=60, anchor="center")
+        self.tree.column("grade", width=50, anchor="center")
+        self.tree.column("units", width=50, anchor="center")
+        self.tree.column("gp", width=50, anchor="center")
+        
+        self.tree.pack(fill="both", expand=True, side="left")
+        
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(fill="y", side="right")
+
+    def create_summary_panel(self):
+        """Outputs total units, current cumulative GPA, and class classification."""
+        self.summary_frame = tk.Frame(self.root, bg="#1E293B", pady=12)
+        self.summary_frame.pack(fill="x", padx=15, pady=15)
+        
+        self.cgpa_lbl = tk.Label(self.summary_frame, text="CGPA: 0.00", font=("Helvetica", 16, "bold"), bg="#1E293B", fg="#F59E0B")
+        self.cgpa_lbl.pack()
+        
+        self.class_lbl = tk.Label(self.summary_frame, text="Class: Not Available", font=("Helvetica", 11, "italic"), bg="#1E293B", fg="#94A3B8")
+        self.class_lbl.pack(pady=2)
+        
+        # Reset control button
+        reset_btn = tk.Button(
+            self.root, text="Clear All Records", font=("Helvetica", 9),
+            bg="#EF4444", fg="#FFFFFF", activebackground="#DC2626", activeforeground="#FFFFFF",
+            bd=0, cursor="hand2", command=self.clear_all
+        )
+        reset_btn.pack(pady=(0, 15))
+
+    def calculate_grade_and_gp(self, score):
+        """Uses Selection Control Statements (if-elif-else) to determine Grade Points."""
+        if score >= 70:
+            return "A", 5
+        elif score >= 60:
+            return "B", 4
+        elif score >= 50:
+            return "C", 3
+        elif score >= 45:
+            return "D", 2
+        elif score >= 40:
+            return "E", 1
+        else:
+            return "F", 0
+
+    def determine_class_of_degree(self, cgpa):
+        """Uses Selection Control Statements to categorize Academic Standings."""
+        if cgpa >= 4.50:
+            return "First Class Honours 🎓"
+        elif cgpa >= 3.50:
+            return "Second Class Honours (Upper Division)"
+        elif cgpa >= 2.40:
+            return "Second Class Honours (Lower Division)"
+        elif cgpa >= 1.50:
+            return "Third Class Honours"
+        elif cgpa >= 1.00:
+            return "Pass"
+        else:
+            return "Fail (Academic Probation)"
+
+    def add_course(self):
+        """Validates layout input data and aggregates current results."""
+        code = self.code_entry.get().strip().upper()
+        score_raw = self.score_entry.get().strip()
+        unit_raw = self.unit_entry.get().strip()
+        
+        if not code or not score_raw or not unit_raw:
+            messagebox.showwarning("Empty Fields", "Please complete all fields.")
+            return
+            
+        try:
+            score = float(score_raw)
+            units = int(unit_raw)
+            
+            if not (0 <= score <= 100):
+                raise ValueError("Score out of bounds.")
+            if units <= 0:
+                raise ValueError("Units must be positive.")
+                
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Ensure Score is 0-100 and Units is a positive integer.")
+            return
+
+        # Core logic execution
+        grade, gp = self.calculate_grade_and_gp(score)
+        weighted_gp = gp * units
+        
+        # Append data structure
+        course_data = {"code": code, "units": units, "weighted_gp": weighted_gp}
+        self.courses.append(course_data)
+        
+        # Display dynamically to user table
+        self.tree.insert("", "end", values=(code, int(score), grade, units, gp))
+        
+        # Refresh visual summary cards
+        self.update_summary()
+        
+        # Clean inputs for next entry execution
+        self.code_entry.delete(0, tk.END)
+        self.score_entry.delete(0, tk.END)
+        self.unit_entry.delete(0, tk.END)
+        self.code_entry.focus()
+
+    def update_summary(self):
+        """Computes summary calculations utilizing loops and conditionals."""
+        if not self.courses:
+            self.cgpa_lbl.config(text="CGPA: 0.00")
+            self.class_lbl.config(text="Class: Not Available")
+            return
+            
+        total_units = sum(c["units"] for c in self.courses)
+        total_weighted_gp = sum(c["weighted_gp"] for c in self.courses)
+        
+        if total_units == 0:
+            cgpa = 0.0
+        else:
+            cgpa = round(total_weighted_gp / total_units, 2)
+            
+        class_standing = self.determine_class_of_degree(cgpa)
+        
+        self.cgpa_lbl.config(text=f"CGPA: {cgpa:.2f}")
+        self.class_lbl.config(text=f"Class: {class_standing}")
+
+    def clear_all(self):
+        """Wipes database arrays and clears table interface state completely."""
+        self.courses.clear()
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.update_summary()
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PocketCGPACalculator(root)
+    root.mainloop()
